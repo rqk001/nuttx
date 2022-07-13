@@ -1354,6 +1354,16 @@ choice EXAMPLE_POWER_SAVE_MODE
 		bool "maximum modem"
 endchoice
 
+config ESP32_WIFI_RAW_LOG_FORMAT
+	bool "Raw log format as esp-idf"
+	default n
+	depends on !SYSLOG_TIMESTAMP && \
+	           !SYSLOG_PRIORITY && \
+	           !SYSLOG_PROCESS_NAME && \
+	           !SYSLOG_PROCESSID && \
+	           !SYSLOG_PREFIX && \
+	           !SYSLOG_COLOR_OUTPUT
+
 endmenu # ESP32_WIRELESS
 
 menu "BLE Configuration"

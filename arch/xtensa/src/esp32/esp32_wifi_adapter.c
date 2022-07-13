@@ -3425,6 +3425,20 @@ static uint32_t esp_rand(void)
 static void esp_log_writev(uint32_t level, const char *tag,
                            const char *format, va_list args)
 {
+#ifndef CONFIG_ESP32_WIFI_RAW_LOG_FORMAT
+  int ret;
+  char *new_fmt;
+
+  ret = asprintf(&new_fmt, "%s: %s\n", tag, format);
+  if (ret < 0)
+    {
+      wlerr("Failed to transform esp-wifi log\n");
+      return ;
+    }
+
+  format = new_fmt;
+#endif
+
   switch (level)
     {
 #ifdef CONFIG_DEBUG_WIRELESS_ERROR
@@ -3446,6 +3460,10 @@ static void esp_log_writev(uint32_t level, const char *tag,
         break;
 #endif
     }
+
+#ifndef CONFIG_ESP32_WIFI_RAW_LOG_FORMAT
+  free(new_fmt);
+#endif
 }
 
 /****************************************************************************
@@ -3468,10 +3486,12 @@ void esp_log_write(uint32_t level,
                    const char *tag,
                    const char *format, ...)
 {
+#ifdef CONFIG_ESP32_WIFI_RAW_LOG_FORMAT
   va_list list;
   va_start(list, format);
   esp_log_writev(level, tag, format, list);
   va_end(list);
+#endif
 }
 
 /****************************************************************************
