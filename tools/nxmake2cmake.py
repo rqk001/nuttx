@@ -21,7 +21,11 @@
 
 import argparse
 import os
+import sys
 from string import Template
+
+if sys.version_info[0] < 3:
+    raise Exception("Must be using Python 3")
 
 
 def board_cmakelist_get(path):
