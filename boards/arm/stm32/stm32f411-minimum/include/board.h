@@ -250,6 +250,14 @@
 #define GPIO_USART6_RX   GPIO_USART6_RX_1    /* PC7 */
 #define GPIO_USART6_TX   GPIO_USART6_TX_1    /* PC6 */
 
+/* PWM
+ *
+ * The STM32F4 Discovery has no real on-board PWM devices, but the board
+ * can be configured to output a pulse train using TIM4 CH2 on PD13.
+ */
+
+#define GPIO_TIM3_CH3OUT  GPIO_TIM3_CH3OUT_1
+
 /* UART RX DMA configurations */
 
 #define DMAMAP_USART1_RX DMAMAP_USART1_RX_2
@@ -321,8 +329,10 @@
  */
 
 #define BUTTON_USER        0
-#define NUM_BUTTONS        1
+#define BUTTON_EXTERNAL    1  //External user button connected to PA1
+#define NUM_BUTTONS        2
 
-#define BUTTON_USER_BIT    (1 << BUTTON_USER)
+#define BUTTON_USER_BIT       (1 << BUTTON_USER)
+#define BUTTON_EXTERNAL_BIT   (1 << BUTTON_EXTERNAL)
 
 #endif /* __BOARDS_ARM_STM32_STM32F411_MINIMUM_INCLUDE_BOARD_H */
