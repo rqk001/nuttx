@@ -37,6 +37,7 @@
 #include <errno.h>
 #include <debug.h>
 
+#include <nuttx/arch.h>
 #include <nuttx/lib/modlib.h>
 
 #include "libc.h"
