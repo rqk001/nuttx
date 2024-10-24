@@ -146,8 +146,9 @@
 #define RCC_PLLCFG_PLLQ_MASK        (15 << RCC_PLLCFG_PLLQ_SHIFT)
 #  define RCC_PLLCFG_PLLQ(n)        ((n) << RCC_PLLCFG_PLLQ_SHIFT) /* n=2..15 */
 
-#if defined(CONFIG_STM32_STM32F427) || defined(CONFIG_STM32_STM32F446) ||\
-    defined(CONFIG_STM32_STM32F469) || defined(CONFIG_STM32_STM32F412)
+#if defined(CONFIG_STM32_STM32F427) || defined(CONFIG_STM32_STM32F446) || \
+    defined(CONFIG_STM32_STM32F469) || defined(CONFIG_STM32_STM32F412) || \
+    defined(CONFIG_STM32_STM32F413)
 #  define RCC_PLLCFG_PLLR_SHIFT     (28)      /* Bits 28-30: Main PLLR (PLLR) divider
                                                * (I2Ss, SAIs, SYSTEM and SPDIF-Rx clocks) */
 #  define RCC_PLLCFG_PLLR_MASK      (7 << RCC_PLLCFG_PLLR_SHIFT)
@@ -510,7 +511,8 @@
 #define RCC_APB2ENR_SPI1EN          (1 << 12) /* Bit 12: SPI1 clock enable */
 #if defined(CONFIG_STM32_STM32F427) || defined(CONFIG_STM32_STM32F429) || \
     defined(CONFIG_STM32_STM32F446) || defined(CONFIG_STM32_STM32F469) || \
-    defined(CONFIG_STM32_STM32F411) || defined(CONFIG_STM32_STM32F412)
+    defined(CONFIG_STM32_STM32F411) || defined(CONFIG_STM32_STM32F412) || \
+    defined(CONFIG_STM32_STM32F413)
 #  define RCC_APB2ENR_SPI4EN        (1 << 13) /* Bit 13: SPI4 clock enable */
 #endif
 #define RCC_APB2ENR_SYSCFGEN        (1 << 14) /* Bit 14: System configuration controller clock enable */
@@ -519,7 +521,7 @@
 #define RCC_APB2ENR_TIM11EN         (1 << 18) /* Bit 18: TIM11 clock enable */
 #if defined(CONFIG_STM32_STM32F427) || defined(CONFIG_STM32_STM32F429) || \
     defined(CONFIG_STM32_STM32F469) || defined(CONFIG_STM32_STM32F411) || \
-    defined(CONFIG_STM32_STM32F412)
+    defined(CONFIG_STM32_STM32F412) || defined(CONFIG_STM32_STM32F413)
 #  define RCC_APB2ENR_SPI5EN        (1 << 20) /* Bit 20: SPI5 clock enable */
 #endif
 #if defined(CONFIG_STM32_STM32F427) || defined(CONFIG_STM32_STM32F429) || \
