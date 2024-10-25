@@ -128,6 +128,16 @@ extern struct spi_dev_s *g_spi5;
 void stm32_spidev_initialize(void);
 
 /****************************************************************************
+ * Name: stm32_spiinitialize
+ *
+ * Description:
+ *   Called to configure SPI devices.
+ *
+ ****************************************************************************/
+
+void stm32_spiinitialize(void);
+
+/****************************************************************************
  * Name: stm32_usbinitialize
  *
  * Description:

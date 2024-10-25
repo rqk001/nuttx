@@ -29,7 +29,7 @@
 #include <debug.h>
 #include <errno.h>
 
-#include <nuttx/spi/spi.h>
+#include <nuttx/spi/spi_transfer.h>
 
 #include "arm_internal.h"
 #include "chip.h"
@@ -78,7 +78,7 @@ struct spi_dev_s *g_spi5;
  *
  ****************************************************************************/
 
-void weak_function stm32_spidev_initialize(void)
+void stm32_spidev_initialize(void)
 {
   /* Configure SPI-based devices */
 
@@ -89,29 +89,30 @@ void weak_function stm32_spidev_initialize(void)
       spierr("ERROR: FAILED to initialize SPI port 1\n");
     }
 #endif
+
 #ifdef CONFIG_STM32_SPI2
-  g_spi1 = stm32_spibus_initialize(2);
+  g_spi2 = stm32_spibus_initialize(2);
   if (!g_spi2)
     {
       spierr("ERROR: FAILED to initialize SPI port 2\n");
     }
 #endif
 #ifdef CONFIG_STM32_SPI3
-  g_spi1 = stm32_spibus_initialize(3);
+  g_spi3 = stm32_spibus_initialize(3);
   if (!g_spi3)
     {
       spierr("ERROR: FAILED to initialize SPI port 3\n");
     }
 #endif
 #ifdef CONFIG_STM32_SPI4
-  g_spi1 = stm32_spibus_initialize(4);
+  g_spi4 = stm32_spibus_initialize(4);
   if (!g_spi4)
     {
       spierr("ERROR: FAILED to initialize SPI port 4\n");
     }
 #endif
 #ifdef CONFIG_STM32_SPI5
-  g_spi1 = stm32_spibus_initialize(5);
+  g_spi5 = stm32_spibus_initialize(5);
   if (!g_spi5)
     {
       spierr("ERROR: FAILED to initialize SPI port 5\n");
@@ -119,11 +120,62 @@ void weak_function stm32_spidev_initialize(void)
 #endif
 }
 
+void weak_function stm32_spiinitialize(void)
+{
+  /* Configure SPI-based devices */
+
+#ifdef CONFIG_SPI_DRIVER
+int     ret;
+
+#ifdef CONFIG_STM32_SPI1
+  /* Register the SPI1 character driver */
+  ret = spi_register(g_spi1, 1);
+  if (ret < 0)
+    {
+      spierr("ERROR: Failed to register SPI1 device: %d\n", ret);
+    }
+#endif  /* CONFIG_STM32_SPI1 */
+
+#ifdef CONFIG_STM32_SPI2
+  /* Register the SPI2 character driver */
+  ret = spi_register(g_spi2, 2);
+  if (ret < 0)
+    {
+      spierr("ERROR: Failed to register SPI2 device: %d\n", ret);
+    }
+#endif  /* CONFIG_STM32_SPI2 */
+#ifdef CONFIG_STM32_SPI3
+  /* Register the SPI3 character driver */
+  ret = spi_register(g_spi3, 3);
+  if (ret < 0)
+    {
+      spierr("ERROR: Failed to register SPI3 device: %d\n", ret);
+    }
+#endif  /* CONFIG_STM32_SPI3 */
+#ifdef CONFIG_STM32_SPI3
+  /* Register the SPI4 character driver */
+  ret = spi_register(g_spi4, 4);
+  if (ret < 0)
+    {
+      spierr("ERROR: Failed to register SPI4 device: %d\n", ret);
+    }
+#endif  /* CONFIG_STM32_SPI4 */
+#ifdef CONFIG_STM32_SPI5
+  /* Register the SPI5 character driver */
+  ret = spi_register(g_spi5, 5);
+  if (ret < 0)
+    {
+      spierr("ERROR: Failed to register SPI5 device: %d\n", ret);
+    }
+#endif  /* CONFIG_STM32_SPI5 */
+#endif  /* CONFIG_SPI_DRIVER */
+}
+
 /****************************************************************************
- * Name:  stm32_spi1/2/3select and stm32_spi1/2/3status
+ * Name:  stm32_spi[12345]select and stm32_spi[12345]status
  *
  * Description:
- *   The external functions, stm32_spi1/2/3select and stm32_spi1/2/3status
+ *   The external functions, stm32_spi[12345]select and stm32_spi[12345]status
  *   must be provided by board-specific logic.  They are implementations of
  *   the select and status methods of the SPI interface defined by struct
  *   spi_ops_s (see include/nuttx/spi/spi.h). All other methods (including
@@ -132,7 +184,7 @@ void weak_function stm32_spidev_initialize(void)
  *
  *   1. Provide logic in stm32_boardinitialize() to configure SPI chip select
  *      pins.
- *   2. Provide stm32_spi1/2/3select() and stm32_spi1/2/3status() functions
+ *   2. Provide stm32_spi[12345]select() and stm32_spi[12345]status() functions
  *      in your board-specific logic.  These functions will perform chip
  *      selection and status operations using GPIOs in the way your board is
  *      configured.
@@ -215,61 +267,4 @@ uint8_t stm32_spi5status(struct spi_dev_s *dev, uint32_t devid)
 }
 #endif
 
-#if 0
-
-/****************************************************************************
- * Name: stm32_spi1cmddata
- *
- * Description:
- *   Set or clear the SH1101A A0 or SD1306 D/C n bit to select data (true)
- *   or command (false). This function must be provided by platform-specific
- *   logic. This is an implementation of the cmddata method of the SPI
- *   interface defined by struct spi_ops_s (see include/nuttx/spi/spi.h).
- *
- * Input Parameters:
- *
- *   spi - SPI device that controls the bus the device that requires the CMD/
- *         DATA selection.
- *   devid - If there are multiple devices on the bus, this selects which one
- *         to select cmd or data.  NOTE:  This design restricts, for example,
- *         one one SPI display per SPI bus.
- *   cmd - true: select command; false: select data
- *
- * Returned Value:
- *   None
- *
- ****************************************************************************/
-
-#ifdef CONFIG_SPI_CMDDATA
-#ifdef CONFIG_STM32_SPI1
-int stm32_spi1cmddata(struct spi_dev_s *dev, uint32_t devid, bool cmd)
-{
-#if defined(CONFIG_LCD_SSD1306_SPI)
-  if (devid == SPIDEV_DISPLAY(0))
-    {
-      stm32_gpiowrite(GPIO_SSD1306_CMD, !cmd);
-    }
-#endif
-
-  return OK;
-}
-#endif
-
-#ifdef CONFIG_STM32_SPI2
-int stm32_spi2cmddata(struct spi_dev_s *dev, uint32_t devid, bool cmd)
-{
-  return OK;
-}
-#endif
-
-#ifdef CONFIG_STM32_SPI3
-int stm32_spi3cmddata(struct spi_dev_s *dev, uint32_t devid, bool cmd)
-{
-  return OK;
-}
-#endif
-#endif /* CONFIG_SPI_CMDDATA */
-
-#endif /* 0 */
-
-#endif /* CONFIG_STM32_SPI1 || CONFIG_STM32_SPI2 || CONFIG_STM32_SPI3 */
+#endif /* CONFIG_STM32_SPI[1-5] */

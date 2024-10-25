@@ -358,6 +358,7 @@ int spi_register(FAR struct spi_dev_s *spi, int bus)
   /* Allocate a SPI character device structure */
 
   priv = kmm_zalloc(sizeof(struct spi_driver_s));
+
   if (priv)
     {
       /* Initialize the SPI character device structure */

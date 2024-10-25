@@ -57,7 +57,8 @@ void stm32_boardinitialize(void)
 #endif
 
 #if defined(CONFIG_STM32_SPI1) || defined(CONFIG_STM32_SPI2) || \
-    defined(CONFIG_STM32_SPI3)
+    defined(CONFIG_STM32_SPI3) || defined(CONFIG_STM32_SPI4) || \
+    defined(CONFIG_STM32_SPI5)
   /* Configure SPI chip selects if 1) SP2 is not disabled, and 2) the
    * weak function stm32_spidev_initialize() has been brought into the link.
    */

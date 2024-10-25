@@ -70,6 +70,11 @@ int stm32_bringup(void)
     }
 #endif
 
+#if defined(CONFIG_STM32_SPI)
+  stm32_spiinitialize();
+#endif
+
+
 #ifdef CONFIG_FS_PROCFS
   /* Mount the procfs file system */
 
