@@ -26,6 +26,7 @@
 
 #include <debug.h>
 
+#include <nuttx/input/buttons.h>
 #include <nuttx/fs/fs.h>
 
 #include "stm32.h"
@@ -74,6 +75,26 @@ int stm32_bringup(void)
   stm32_spiinitialize();
 #endif
 
+#ifdef CONFIG_NUCLEO_F413ZH_GPIO
+  stm32_gpio_initialize();
+#endif
+
+#ifdef CONFIG_INPUT_BUTTONS
+#ifdef CONFIG_INPUT_BUTTONS_LOWER
+  /* Register the BUTTON driver */
+
+  ret = btn_lower_initialize("/dev/buttons");
+  if (ret != OK)
+    {
+      syslog(LOG_ERR, "ERROR: btn_lower_initialize() failed: %d\n", ret);
+      return ret;
+    }
+#else
+  /* Enable BUTTON support for some other purpose */
+
+  board_button_initialize();
+#endif /* CONFIG_INPUT_BUTTONS_LOWER */
+#endif /* CONFIG_INPUT_BUTTONS */
 
 #ifdef CONFIG_FS_PROCFS
   /* Mount the procfs file system */
@@ -88,3 +109,14 @@ int stm32_bringup(void)
 
   return ret;
 }
+
+#ifdef CONFIG_SYSTEMTICK_HOOK
+
+sem_t g_waitsem;
+
+void board_timerhook(void)
+{
+  (void)sem_post(&g_waitsem);
+}
+#endif
+

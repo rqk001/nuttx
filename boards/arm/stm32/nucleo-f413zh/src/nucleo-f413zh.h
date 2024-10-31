@@ -44,19 +44,6 @@
  * - When the I/O is LOW, the LED is off.
  */
 
-/* Buttons
- *
- * B1 USER: the user button is connected to the I/O PA0 of the STM32
- * microcontroller.
- */
-
-#define MIN_IRQBUTTON   BUTTON_USER
-#define MAX_IRQBUTTON   BUTTON_USER
-#define NUM_IRQBUTTONS  1
-
-#define GPIO_BTN_USER \
-  (GPIO_INPUT |GPIO_FLOAT |GPIO_EXTI | GPIO_PORTA | GPIO_PIN0)
-
 /* SPI1 off */
 
 #define GPIO_SPI1_MOSI_OFF (GPIO_INPUT | GPIO_PULLDOWN | \
@@ -117,67 +104,28 @@ extern struct spi_dev_s *g_spi4;
 extern struct spi_dev_s *g_spi5;
 #endif
 
-/****************************************************************************
- * Name: stm32_spidev_initialize
- *
- * Description:
- *   Called to configure SPI chip select GPIO pins.
- *
- ****************************************************************************/
-
-void stm32_spidev_initialize(void);
-
-/****************************************************************************
- * Name: stm32_spiinitialize
- *
- * Description:
- *   Called to configure SPI devices.
- *
- ****************************************************************************/
-
-void stm32_spiinitialize(void);
-
-/****************************************************************************
- * Name: stm32_usbinitialize
- *
- * Description:
- *   Called from stm32_boardinitialize very early in initialization to setup
- *   USB-related GPIO pins for the STM32F4Discovery board.
- *
- ****************************************************************************/
-
-#ifdef CONFIG_STM32_OTGFS
-void stm32_usbinitialize(void);
-#endif
-
-/****************************************************************************
- * Name: stm32_usbhost_initialize
- *
- * Description:
- *   Called at application startup time to initialize the USB host
- *   functionality.  This function will start a thread that will monitor for
- *   device connection/disconnection events.
- *
- ****************************************************************************/
-
-#if defined(CONFIG_STM32_OTGFS) && defined(CONFIG_USBHOST)
-int stm32_usbhost_initialize(void);
-#endif
-
-/****************************************************************************
- * Name: stm32_bringup
- *
- * Description:
- *   Perform architecture-specific initialization
- *
- *   CONFIG_BOARD_LATE_INITIALIZE=y :
- *     Called from board_late_initialize().
- *
- *   CONFIG_BOARD_LATE_INITIALIZE=y && CONFIG_BOARDCTL=y :
- *     Called from the NSH library
- *
- ****************************************************************************/
-
 int stm32_bringup(void);
+
+/* Board Peripherals */
+#ifdef CONFIG_SPI
+  void stm32_spidev_initialize(void);
+  void stm32_spiinitialize(void);
+#endif
+#ifdef CONFIG_NUCLEO_F413ZH_GPIO
+  int stm32_gpio_initialize(void);
+#endif
+#ifdef CONFIG_STM32_OTGFS
+  void stm32_usbinitialize(void);
+#endif
+#if defined(CONFIG_STM32_OTGFS) && defined(CONFIG_USBHOST)
+  int stm32_usbhost_initialize(void);
+#endif
+
+#define MIN_IRQBUTTON   BUTTON_USER
+#define MAX_IRQBUTTON   BUTTON_USER
+#define NUM_IRQBUTTONS  1
+
+#define GPIO_BTN_USER \
+  (GPIO_INPUT |GPIO_FLOAT |GPIO_EXTI | GPIO_PORTC | GPIO_PIN13)
 
 #endif /* __BOARDS_ARM_STM32_NUCLEO_F413ZH_SRC_NUCLEO_F413ZH_H */

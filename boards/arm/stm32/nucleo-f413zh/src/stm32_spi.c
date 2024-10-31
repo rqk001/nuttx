@@ -129,7 +129,7 @@ int     ret;
 
 #ifdef CONFIG_STM32_SPI1
   /* Register the SPI1 character driver */
-  ret = spi_register(g_spi1, 1);
+  ret = spi_register(g_spi1, 0);
   if (ret < 0)
     {
       spierr("ERROR: Failed to register SPI1 device: %d\n", ret);
@@ -138,7 +138,7 @@ int     ret;
 
 #ifdef CONFIG_STM32_SPI2
   /* Register the SPI2 character driver */
-  ret = spi_register(g_spi2, 2);
+  ret = spi_register(g_spi2, 1);
   if (ret < 0)
     {
       spierr("ERROR: Failed to register SPI2 device: %d\n", ret);
@@ -146,7 +146,7 @@ int     ret;
 #endif  /* CONFIG_STM32_SPI2 */
 #ifdef CONFIG_STM32_SPI3
   /* Register the SPI3 character driver */
-  ret = spi_register(g_spi3, 3);
+  ret = spi_register(g_spi3, 2);
   if (ret < 0)
     {
       spierr("ERROR: Failed to register SPI3 device: %d\n", ret);
@@ -154,7 +154,7 @@ int     ret;
 #endif  /* CONFIG_STM32_SPI3 */
 #ifdef CONFIG_STM32_SPI3
   /* Register the SPI4 character driver */
-  ret = spi_register(g_spi4, 4);
+  ret = spi_register(g_spi4, 3);
   if (ret < 0)
     {
       spierr("ERROR: Failed to register SPI4 device: %d\n", ret);
@@ -162,7 +162,7 @@ int     ret;
 #endif  /* CONFIG_STM32_SPI4 */
 #ifdef CONFIG_STM32_SPI5
   /* Register the SPI5 character driver */
-  ret = spi_register(g_spi5, 5);
+  ret = spi_register(g_spi5, 4);
   if (ret < 0)
     {
       spierr("ERROR: Failed to register SPI5 device: %d\n", ret);

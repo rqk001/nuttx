@@ -169,7 +169,7 @@
 #      define STM32_FLASH_SIZE        _K((4 * 16) + (1 * 64) + (11 * 128))
 #      define STM32_FLASH_SIZES       {_K(16), _K(16), _K(16), _K(16),    \
                                       _K(64), _K(128), _K(128), _K(128),  \
-                                      _K(64), _K(128), _K(128), _K(128),  \
+                                      _K(128), _K(128), _K(128), _K(128),  \
                                       _K(128), _K(128), _K(128), _K(128)}
 
 #    elif defined(CONFIG_STM32_FLASH_CONFIG_I) && defined(CONFIG_STM32_STM32F4XXX)

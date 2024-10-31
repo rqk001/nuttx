@@ -195,6 +195,15 @@
 #define GPIO_CAN1_RX GPIO_CAN1_RX_3
 #define GPIO_CAN1_TX GPIO_CAN1_TX_3
 
+/* Button */
+#define NUM_BUTTONS     1
+#define BUTTON_USER     0
+
+/* GPIO */
+#define BOARD_NGPIO_OUT     0
+#define BOARD_NGPIO_IN      0
+#define BOARD_NGPIO_INT     0   // BOOT button @ PC13
+
 /* LEDs
  
  * The NUCLEO-F413ZH board has 3 user leds.

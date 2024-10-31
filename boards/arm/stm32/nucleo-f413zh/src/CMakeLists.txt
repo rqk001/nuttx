@@ -20,17 +20,29 @@
 
 set(SRCS stm32_boot.c stm32_bringup.c)
 
+if(CONFIG_ARCH_GPIO)
+  list(APPEND SRCS stm32_gpio.c)
+endif
+
+if(CONFIG_ARCH_BUTTONS)
+  list(APPEND SRCS stm32_buttons.c)
+endif
+
 if(CONFIG_ARCH_LEDS)
   list(APPEND SRCS stm32_autoleds.c)
-endif()
+endif
 
 if(CONFIG_NSH_LIBRARY)
   list(APPEND SRCS stm32_appinit.c)
-endif()
+endif
+
+if(CONFIG_SPI)
+  list(APPEND SRCS stm32_spi.c)
+endif
 
 if(CONFIG_STM32_OTGFS)
   list(APPEND SRCS stm32_usb.c)
-endif()
+endif
 
 target_sources(board PRIVATE ${SRCS})
 

@@ -1713,6 +1713,8 @@ config ARCH_BOARD_NUCLEO_F413ZH
 	bool "STM32F413 Nucleo F413ZH"
 	depends on ARCH_CHIP_STM32F413ZH
 	select ARCH_HAVE_LEDS
+	select ARCH_HAVE_BUTTONS
+	select ARCH_HAVE_IRQBUTTONS
 	---help---
 		This is a minimal configuration that supports low-level test of the
 		Nucleo F413ZH in the NuttX source tree.
