@@ -725,6 +725,24 @@ int esp32_bringup(void)
     }
 #endif
 
+#if defined(CONFIG_ESP32_SPI3) && defined(CONFIG_SPI_DRIVER)
+  ret = board_spidev_initialize(ESP32_SPI3);
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "Failed to initialize SPI%d driver: %d\n",
+             ESP32_SPI3, ret);
+    }
+#endif
+
+# if defined(CONFIG_ESP32_SPI3) && defined(CONFIG_SPI_SLAVE_DRIVER)
+  ret = board_spislavedev_initialize(ESP32_SPI3);
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "Failed to initialize SPI%d Slave driver: %d\n",
+              ESP32_SPI3, ret);
+    }
+#endif
+
 #ifdef CONFIG_WS2812
 #  ifndef CONFIG_WS2812_NON_SPI_DRIVER
   ret = board_ws2812_initialize(0, ESP32_SPI3, CONFIG_WS2812_LED_COUNT);

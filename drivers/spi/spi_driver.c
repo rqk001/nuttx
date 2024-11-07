@@ -267,6 +267,16 @@ static int spidrvr_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
         }
         break;
 
+#ifdef NOTYET
+#ifdef CONFIG_ESP32_SPI_MULTI
+      case SPIOC_SETCS:
+        {
+          /* Set active CS index */
+
+        }
+#endif
+#endif
+
       default:
         ret = -ENOTTY;
         break;
@@ -353,6 +363,8 @@ int spi_register(FAR struct spi_dev_s *spi, int bus)
   char devname[DEVNAME_FMTLEN];
   int ret;
 
+  spiinfo("%s: %d\n", __FILE__, __LINE__);
+  
   /* Sanity check */
 
   DEBUGASSERT(spi != NULL && (unsigned)bus < 1000);

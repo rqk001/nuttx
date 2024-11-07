@@ -1201,6 +1201,16 @@ endmenu #ESP32_TWAI
 menu "SPI Configuration"
 	depends on ESP32_SPI
 
+config ESP32_SPI_MULTI
+    bool "Multiple devices on SPI bus"
+    default n
+
+config ESP32_SPI_MAX_CS
+    int "Max number of defices on SPI bus"
+    default 2
+    range 1 8
+    depends on ESP32_SPI_MULTI
+
 config ESP32_SPI_SWCS
 	bool "SPI software CS"
 	default y
@@ -1247,10 +1257,65 @@ config ESP32_SPI_DMATHRESHOLD
 
 if ESP32_SPI2
 
+if !ESP32_SPI_MULTI
+
 config ESP32_SPI2_CSPIN
 	int "SPI2 CS Pin"
 	default 15
 	range 0 39
+
+endif  # !ESP32_SPI_MULTI
+if ESP32_SPI_MULTI
+
+config ESP32_SPI2_CS0
+    int "SPI2 CS0 Pin"
+    depends on ESP32_SPI_MAX_CS > 0
+    default 15
+    range 0 39
+
+config ESP32_SPI2_CS1
+    int "SPI2 CS1 Pin"
+    depends on ESP32_SPI_MAX_CS > 1
+    default 16
+    range 0 39
+
+config ESP32_SPI2_CS2
+    int "SPI2 CS2 Pin"
+    depends on ESP32_SPI_MAX_CS > 2
+    default 15
+    range 0 39
+
+config ESP32_SPI2_CS3
+    int "SPI2 CS3 Pin"
+    depends on ESP32_SPI_MAX_CS > 3
+    default 15
+    range 0 39
+
+config ESP32_SPI2_CS4
+    int "SPI2 CS4 Pin"
+    depends on ESP32_SPI_MAX_CS > 4
+    default 15
+    range 0 39
+
+config ESP32_SPI2_CS5
+    int "SPI2 CS5 Pin"
+    depends on ESP32_SPI_MAX_CS > 5
+    default 15
+    range 0 39
+
+config ESP32_SPI2_CS6
+    int "SPI2 CS6 Pin"
+    depends on ESP32_SPI_MAX_CS > 6
+    default 15
+    range 0 39
+
+config ESP32_SPI2_CS7
+    int "SPI2 CS7 Pin"
+    depends on ESP32_SPI_MAX_CS > 7
+    default 15
+    range 0 39
+
+endif # ESP32_SPI_MULTI
 
 config ESP32_SPI2_CLKPIN
 	int "SPI2 CLK Pin"
@@ -1302,10 +1367,65 @@ endif # ESP32_SPI2
 
 if ESP32_SPI3
 
+if !ESP32_SPI_MULTI
+
 config ESP32_SPI3_CSPIN
 	int "SPI3 CS Pin"
 	default 5
 	range 0 39
+
+endif  # !ESP32_SPI_MULTI
+if ESP32_SPI_MULTI
+
+config ESP32_SPI3_CS0
+    int "SPI3 CS0 Pin"
+    depends on ESP32_SPI_MAX_CS > 0
+    default 5
+    range 0 39
+
+config ESP32_SPI3_CS1
+    int "SPI3 CS1 Pin"
+    depends on ESP32_SPI_MAX_CS > 1
+    default 4
+    range 0 39
+
+config ESP32_SPI3_CS2
+    int "SPI3 CS2 Pin"
+    depends on ESP32_SPI_MAX_CS > 2
+    default 5
+    range 0 39
+
+config ESP32_SPI3_CS3
+    int "SPI3 CS3 Pin"
+    depends on ESP32_SPI_MAX_CS > 3
+    default 5
+    range 0 39
+
+config ESP32_SPI3_CS4
+    int "SPI3 CS4 Pin"
+    depends on ESP32_SPI_MAX_CS > 4
+    default 5
+    range 0 39
+
+config ESP32_SPI3_CS5
+    int "SPI3 CS5 Pin"
+    depends on ESP32_SPI_MAX_CS > 5
+    default 5
+    range 0 39
+
+config ESP32_SPI3_CS6
+    int "SPI3 CS6 Pin"
+    depends on ESP32_SPI_MAX_CS > 6
+    default 5
+    range 0 39
+
+config ESP32_SPI3_CS7
+    int "SPI3 CS7 Pin"
+    depends on ESP32_SPI_MAX_CS > 7
+    default 5
+    range 0 39
+
+endif # ESP32_SPI_MULTI
 
 config ESP32_SPI3_CLKPIN
 	int "SPI3 CLK Pin"

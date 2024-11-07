@@ -97,7 +97,8 @@
 
 /* SPI Default speed (limited by clock divider) */
 
-#define SPI_FREQ_DEFAULT  (400000)
+// #define SPI_FREQ_DEFAULT  (400000)
+#define SPI_FREQ_DEFAULT  (1000000)
 
 /* Helper for applying the mask for a given register field.
  * Mask is determined by the macros suffixed with _V and _S from the
@@ -109,6 +110,12 @@
 /* SPI Maximum buffer size in bytes */
 
 #define SPI_MAX_BUF_SIZE (64)
+
+//
+// Public functions
+//
+int esp32_spibus_getcsind(int port);
+int esp32_spibus_setcsind(int port, int csind);
 
 /****************************************************************************
  * Private Types
@@ -123,10 +130,17 @@ struct esp32_spi_config_s
   uint32_t clk_freq;          /* SPI clock frequency */
   enum spi_mode_e mode;       /* SPI default mode */
 
-  uint8_t cs_pin;             /* GPIO configuration for CS */
   uint8_t mosi_pin;           /* GPIO configuration for MOSI */
   uint8_t miso_pin;           /* GPIO configuration for MISO */
   uint8_t clk_pin;            /* GPIO configuration for CLK */
+
+#ifndef CONFIG_ESP32_SPI_MULTI
+  uint8_t cs_pin;             /* GPIO configuration for CS */
+#else
+  uint8_t cs_num;             /* Number of CS signals */
+  uint8_t  cs_active;         /* Current CS signal index */
+  uint8_t cs_pins[CONFIG_ESP32_SPI_MAX_CS];  /* CS signal pins */
+#endif
 
   uint8_t periph;             /* peripher ID */
   uint8_t irq;                /* Interrupt ID */
@@ -160,7 +174,7 @@ struct esp32_spi_priv_s
 
   /* Port configuration */
 
-  const struct esp32_spi_config_s *config;
+  struct esp32_spi_config_s *config;
 
   int refs;                    /* Reference count */
 
@@ -226,15 +240,24 @@ static void esp32_spi_deinit(struct spi_dev_s *dev);
  ****************************************************************************/
 
 #ifdef CONFIG_ESP32_SPI2
-static const struct esp32_spi_config_s esp32_spi2_config =
+static struct esp32_spi_config_s esp32_spi2_config =
 {
   .id           = 2,
   .clk_freq     = SPI_FREQ_DEFAULT,
   .mode         = SPIDEV_MODE0,
-  .cs_pin       = CONFIG_ESP32_SPI2_CSPIN,
   .mosi_pin     = CONFIG_ESP32_SPI2_MOSIPIN,
   .miso_pin     = CONFIG_ESP32_SPI2_MISOPIN,
   .clk_pin      = CONFIG_ESP32_SPI2_CLKPIN,
+#ifndef CONFIG_ESP32_SPI_MULTI
+  .cs_pin       = CONFIG_ESP32_SPI2_CSPIN,
+#else
+  .cs_num        = CONFIG_ESP32_SPI_MAX_CS,
+  .cs_active     = 0,
+  .cs_pins       = {
+                    CONFIG_ESP32_SPI2_CS0,
+                    CONFIG_ESP32_SPI2_CS1,
+                  },
+#endif
   .periph       = ESP32_PERIPH_SPI2,
   .irq          = ESP32_IRQ_SPI2,
   .clk_bit      = DPORT_SPI_CLK_EN_2,
@@ -250,6 +273,7 @@ static const struct esp32_spi_config_s esp32_spi2_config =
   .dma_rst_bit  = DPORT_SPI_DMA_RST,
   .cs_insig     = HSPICS0_IN_IDX,
   .cs_outsig    = HSPICS0_OUT_IDX,
+
   .mosi_insig   = HSPID_IN_IDX,
   .mosi_outsig  = HSPID_OUT_IDX,
   .miso_insig   = HSPIQ_IN_IDX,
@@ -259,7 +283,7 @@ static const struct esp32_spi_config_s esp32_spi2_config =
   .flags        = ESP32_SPI2_IO
 };
 
-static const struct spi_ops_s esp32_spi2_ops =
+static struct spi_ops_s esp32_spi2_ops =
 {
   .lock              = esp32_spi_lock,
 #ifdef CONFIG_ESP32_SPI_UDCS
@@ -303,15 +327,24 @@ static struct esp32_spi_priv_s esp32_spi2_priv =
 #endif /* CONFIG_ESP32_SPI2 */
 
 #ifdef CONFIG_ESP32_SPI3
-static const struct esp32_spi_config_s esp32_spi3_config =
+static struct esp32_spi_config_s esp32_spi3_config =
 {
   .id           = 3,
   .clk_freq     = SPI_FREQ_DEFAULT,
   .mode         = SPIDEV_MODE0,
-  .cs_pin       = CONFIG_ESP32_SPI3_CSPIN,
   .mosi_pin     = CONFIG_ESP32_SPI3_MOSIPIN,
   .miso_pin     = CONFIG_ESP32_SPI3_MISOPIN,
   .clk_pin      = CONFIG_ESP32_SPI3_CLKPIN,
+#ifndef CONFIG_ESP32_SPI_MULTI
+  .cs_pin       = CONFIG_ESP32_SPI3_CSPIN,
+#else
+  .cs_num        = CONFIG_ESP32_SPI_MAX_CS,
+  .clk_freq     = 0,
+  .cs_pins       = {
+                    CONFIG_ESP32_SPI3_CS0,
+                    CONFIG_ESP32_SPI3_CS1,
+                  },
+#endif  
   .periph       = ESP32_PERIPH_SPI3,
   .irq          = ESP32_IRQ_SPI3,
   .clk_bit      = DPORT_SPI_CLK_EN,
@@ -446,7 +479,33 @@ static inline void esp32_spi_reset_regbits(uint32_t addr, uint32_t bits)
  *
  ****************************************************************************/
 
-static inline bool esp32_spi_iomux(struct esp32_spi_priv_s *priv)
+static inline bool esp32_spics_iomux(struct esp32_spi_priv_s *priv, uint8_t pin)
+{
+  const struct esp32_spi_config_s *cfg = priv->config;
+
+  if (cfg->id == 2)
+      return (pin == SPI2_IOMUX_CSPIN);
+  else if (cfg->id == 3)
+      return (pin == SPI3_IOMUX_CSPIN);
+
+  return false;
+}
+
+/****************************************************************************
+ * Name: esp32_spidata_iomux
+ *
+ * Description:
+ *   Check if the option SPI GPIO pins can use IOMUX directly
+ *
+ * Input Parameters:
+ *   priv   - Private SPI device structure
+ *
+ * Returned Value:
+ *   True if can use IOMUX or false if can't.
+ *
+ ****************************************************************************/
+
+static inline bool esp32_spidata_iomux(struct esp32_spi_priv_s *priv)
 {
   bool mapped = false;
   const struct esp32_spi_config_s *cfg = priv->config;
@@ -456,9 +515,6 @@ static inline bool esp32_spi_iomux(struct esp32_spi_priv_s *priv)
       if ((!(cfg->flags & ESP32_SPI_IO_W) ||
            cfg->mosi_pin == SPI2_IOMUX_MOSIPIN) &&
 
-#ifndef CONFIG_ESP32_SPI_SWCS
-          cfg->cs_pin == SPI2_IOMUX_CSPIN &&
-#endif
           (!(cfg->flags & ESP32_SPI_IO_R) ||
            cfg->miso_pin == SPI2_IOMUX_MISOPIN) &&
 
@@ -472,9 +528,6 @@ static inline bool esp32_spi_iomux(struct esp32_spi_priv_s *priv)
       if ((!(cfg->flags & ESP32_SPI_IO_W) ||
            cfg->mosi_pin == SPI3_IOMUX_MOSIPIN) &&
 
-#ifndef CONFIG_ESP32_SPI_SWCS
-          cfg->cs_pin == SPI3_IOMUX_CSPIN &&
-#endif
           (!(cfg->flags & ESP32_SPI_IO_R) ||
            cfg->miso_pin == SPI3_IOMUX_MISOPIN) &&
 
@@ -563,6 +616,14 @@ static void esp32_spi_select(struct spi_dev_s *dev,
   struct esp32_spi_priv_s *priv = (struct esp32_spi_priv_s *)dev;
 
   esp32_gpiowrite(priv->config->cs_pin, !selected);
+#endif
+#ifdef CONFIG_ESP32_SPI_MULTI
+  struct esp32_spi_priv_s *priv = (struct esp32_spi_priv_s *)dev;
+  struct esp32_spi_config_s *config = priv->config;
+
+  if (selected)
+    esp32_spibus_setcsind((config->id & 0xff), devid & 0xff);
+
 #endif
 
   spiinfo("devid: %08" PRIx32 " CS: %s\n",
@@ -1296,6 +1357,31 @@ static int esp32_spi_trigger(struct spi_dev_s *dev)
 }
 #endif
 
+//
+//  Get priv struct from bus no.
+//
+static struct esp32_spi_priv_s *esp32_spipriv_get(int port)
+{
+  struct spi_dev_s *spi_dev;
+  struct esp32_spi_priv_s *priv;
+
+  switch (port)
+    {
+#ifdef CONFIG_ESP32_SPI2
+      case ESP32_SPI2:
+        return &esp32_spi2_priv;
+#endif
+#ifdef CONFIG_ESP32_SPI3
+      case ESP32_SPI3:
+        return &esp32_spi3_priv;
+#endif
+      default:
+        return NULL;
+    }
+ 
+}
+
+
 /****************************************************************************
  * Name: esp32_spi_init
  *
@@ -1315,8 +1401,24 @@ static void esp32_spi_init(struct spi_dev_s *dev)
   struct esp32_spi_priv_s *priv = (struct esp32_spi_priv_s *)dev;
   const struct esp32_spi_config_s *config = priv->config;
   uint32_t regval;
+  uint8_t cspin;
 
-  esp32_gpiowrite(config->cs_pin, 1);
+  spiinfo("%s:%d\n", __FILE__, __LINE__);
+
+// Set everything high
+//
+#ifndef CONFIG_ESP32_SPI_MULTI
+  cspin = config->cs_pin;
+  esp32_gpiowrite(cspin, 1);
+#else /* !CONFIG_ESP32_SPI_MULTI */
+  cspin = config->cs_pins[config->cs_active];
+  for (int i=0; i<config->cs_num; ++i)
+    {
+      esp32_configgpio(config->cs_pins[i], OUTPUT);
+      esp32_gpiowrite(config->cs_pins[i], 1);
+    }
+#endif /* CONFIG_ESP32_SPI_MULTI */
+
   esp32_gpiowrite(config->clk_pin, 1);
 
   if (config->flags & ESP32_SPI_IO_W)
@@ -1324,22 +1426,43 @@ static void esp32_spi_init(struct spi_dev_s *dev)
       esp32_gpiowrite(config->mosi_pin, 1);
     }
 
+  spiinfo("%s:%d\n", __FILE__, __LINE__);
+
   if (config->flags & ESP32_SPI_IO_R)
     {
       esp32_gpiowrite(config->miso_pin, 1);
     }
 
+  spiinfo("%s:%d\n", __FILE__, __LINE__);
+
 #ifdef CONFIG_ESP32_SPI_SWCS
   esp32_configgpio(config->cs_pin, OUTPUT);
   esp32_gpio_matrix_out(config->cs_pin, SIG_GPIO_OUT_IDX, 0, 0);
+#ifdef CONFIG_ESP32_SPI_MULTI
+#error ESP32_SPI_SWCS not currently implemented for ESP32_SPI_MULTI
 #endif
+#else /* !CONFIG_ESP32_SPI_SWCS */
 
-  if (esp32_spi_iomux(priv))
+  spiinfo("%s:%d\n", __FILE__, __LINE__);
+
+  if (esp32_spics_iomux(priv, cspin))
     {
-#ifndef CONFIG_ESP32_SPI_SWCS
-      esp32_configgpio(config->cs_pin, OUTPUT_FUNCTION_2);
-      esp32_gpio_matrix_out(config->cs_pin, SIG_GPIO_OUT_IDX, 0, 0);
-#endif
+      esp32_configgpio(cspin, OUTPUT_FUNCTION_2);
+      esp32_gpio_matrix_out(cspin, SIG_GPIO_OUT_IDX, 0, 0);
+    }
+  else
+    { 
+      esp32_configgpio(cspin, OUTPUT_FUNCTION_3);
+      esp32_gpio_matrix_out(cspin, config->cs_outsig, 0, 0); 
+    }
+
+#endif /* CONFIG_ESP32_SPI_SWCS */
+
+
+  spiinfo("%s:%d\n", __FILE__, __LINE__);
+
+  if (esp32_spidata_iomux(priv))
+    {
 
       esp32_configgpio(config->clk_pin, OUTPUT_FUNCTION_2);
       esp32_gpio_matrix_out(config->clk_pin, SIG_GPIO_OUT_IDX, 0, 0);
@@ -1358,11 +1481,6 @@ static void esp32_spi_init(struct spi_dev_s *dev)
     }
   else
     {
-#ifndef CONFIG_ESP32_SPI_SWCS
-      esp32_configgpio(config->cs_pin, OUTPUT_FUNCTION_3);
-      esp32_gpio_matrix_out(config->cs_pin, config->cs_outsig, 0, 0);
-#endif
-
       esp32_configgpio(config->clk_pin, OUTPUT_FUNCTION_3);
       esp32_gpio_matrix_out(config->clk_pin, config->clk_outsig, 0, 0);
 
@@ -1382,6 +1500,8 @@ static void esp32_spi_init(struct spi_dev_s *dev)
   modifyreg32(DPORT_PERIP_CLK_EN_REG, 0, config->clk_bit);
   modifyreg32(DPORT_PERIP_RST_EN_REG, config->rst_bit, 0);
 
+  spiinfo("%s:%d\n", __FILE__, __LINE__);
+
   regval = SPI_DOUTDIN_M | SPI_USR_MISO_M | SPI_USR_MOSI_M | SPI_CS_HOLD_M;
   putreg32(regval, SPI_USER_REG(config->id));
   putreg32(0, SPI_USER1_REG(config->id));
@@ -1391,6 +1511,8 @@ static void esp32_spi_init(struct spi_dev_s *dev)
 #ifdef CONFIG_ESP32_SPI_SWCS
   esp32_spi_set_regbits(SPI_PIN_REG(config->id), SPI_CS0_DIS_M);
 #endif
+
+  spiinfo("%s:%d\n", __FILE__, __LINE__);
 
   putreg32(0, SPI_CTRL_REG(config->id));
   putreg32(VALUE_MASK(0, SPI_HOLD_TIME), SPI_CTRL2_REG(config->id));
@@ -1412,6 +1534,9 @@ static void esp32_spi_init(struct spi_dev_s *dev)
   esp32_spi_setfrequency(dev, config->clk_freq);
   esp32_spi_setbits(dev, 8);
   esp32_spi_setmode(dev, config->mode);
+
+  spiinfo("%s:%d\n", __FILE__, __LINE__);
+
 }
 
 /****************************************************************************
@@ -1490,33 +1615,17 @@ static int esp32_spi_interrupt(int irq, void *context, void *arg)
 struct spi_dev_s *esp32_spibus_initialize(int port)
 {
   int ret;
-  struct spi_dev_s *spi_dev;
   struct esp32_spi_priv_s *priv;
 
-  switch (port)
-    {
-#ifdef CONFIG_ESP32_SPI2
-      case ESP32_SPI2:
-        priv = &esp32_spi2_priv;
-        break;
-#endif
-#ifdef CONFIG_ESP32_SPI3
-      case ESP32_SPI3:
-        priv = &esp32_spi3_priv;
-        break;
-#endif
-      default:
-        return NULL;
-    }
 
-  spi_dev = (struct spi_dev_s *)priv;
+  priv = esp32_spipriv_get(port);
 
   nxmutex_lock(&priv->lock);
   if (priv->refs != 0)
     {
       priv->refs++;
       nxmutex_unlock(&priv->lock);
-      return spi_dev;
+      return &priv->spi_dev;
     }
 
   if (priv->config->use_dma)
@@ -1545,11 +1654,11 @@ struct spi_dev_s *esp32_spibus_initialize(int port)
       up_enable_irq(priv->config->irq);
     }
 
-  esp32_spi_init(spi_dev);
+  esp32_spi_init(&priv->spi_dev);
   priv->refs++;
 
   nxmutex_unlock(&priv->lock);
-  return spi_dev;
+  return &priv->spi_dev;
 }
 
 /****************************************************************************
@@ -1598,4 +1707,61 @@ int esp32_spibus_uninitialize(struct spi_dev_s *dev)
   return OK;
 }
 
+#ifdef  CONFIG_ESP32_SPI_MULTI
+
+int esp32_spibus_getcsind(int port)
+{
+  struct esp32_spi_priv_s *priv = esp32_spipriv_get(port);
+
+  if (priv == 0)
+    return -EINVAL;
+
+  return  (int)priv->config->cs_pins[priv->config->cs_active];
+}
+
+int esp32_spibus_setcsind(int port, int csind)
+{
+  struct esp32_spi_priv_s *priv = esp32_spipriv_get(port);
+  struct esp32_spi_config_s *config = priv->config;
+  uint8_t cspin = config->cs_pins[csind];
+
+  if (priv == 0)
+    return -EINVAL;
+
+  if (csind < 0  || csind > config->cs_num - 1 )
+    return -EINVAL;
+
+  config->cs_active = csind;
+
+#ifndef CONFIG_ESP32_SPI_SWCS
+  for (int i=0; i<priv->config->cs_num; ++i)
+    if (i == csind)
+      {
+        if (esp32_spics_iomux(priv, cspin))
+          {
+            esp32_configgpio(cspin, OUTPUT_FUNCTION_2);
+            esp32_gpio_matrix_out(cspin, SIG_GPIO_OUT_IDX, 0, 0);
+          }
+        else
+          { 
+            esp32_configgpio(cspin, OUTPUT_FUNCTION_3);
+            esp32_gpio_matrix_out(cspin, priv->config->cs_outsig, 0, 0);
+          }
+      }
+    else
+      {
+        esp32_configgpio(config->cs_pins[i], OUTPUT);
+        esp32_gpio_matrix_out(config->cs_pins[i], 0x100, 0, 0);   // Cancel routing
+        esp32_gpiowrite(config->cs_pins[i], 1);
+      }
+#endif
+
+  return OK;
+}
+
+#endif /* CONFIG_ESP32_SPI_MULTI */
+
+
+
 #endif /* CONFIG_ESP32_SPI */
+
