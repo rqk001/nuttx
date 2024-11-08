@@ -826,7 +826,7 @@ static void esp32_spi_setbits(struct spi_dev_s *dev, int nbits)
 {
   struct esp32_spi_priv_s *priv = (struct esp32_spi_priv_s *)dev;
 
-  spiinfo("nbits=%d\n", nbits);
+//  spiinfo("nbits=%d\n", nbits);
 
   priv->nbits = nbits;
 }
@@ -1426,14 +1426,10 @@ static void esp32_spi_init(struct spi_dev_s *dev)
       esp32_gpiowrite(config->mosi_pin, 1);
     }
 
-  spiinfo("%s:%d\n", __FILE__, __LINE__);
-
   if (config->flags & ESP32_SPI_IO_R)
     {
       esp32_gpiowrite(config->miso_pin, 1);
     }
-
-  spiinfo("%s:%d\n", __FILE__, __LINE__);
 
 #ifdef CONFIG_ESP32_SPI_SWCS
   esp32_configgpio(config->cs_pin, OUTPUT);
@@ -1442,8 +1438,6 @@ static void esp32_spi_init(struct spi_dev_s *dev)
 #error ESP32_SPI_SWCS not currently implemented for ESP32_SPI_MULTI
 #endif
 #else /* !CONFIG_ESP32_SPI_SWCS */
-
-  spiinfo("%s:%d\n", __FILE__, __LINE__);
 
   if (esp32_spics_iomux(priv, cspin))
     {
@@ -1457,9 +1451,6 @@ static void esp32_spi_init(struct spi_dev_s *dev)
     }
 
 #endif /* CONFIG_ESP32_SPI_SWCS */
-
-
-  spiinfo("%s:%d\n", __FILE__, __LINE__);
 
   if (esp32_spidata_iomux(priv))
     {
@@ -1512,8 +1503,6 @@ static void esp32_spi_init(struct spi_dev_s *dev)
   esp32_spi_set_regbits(SPI_PIN_REG(config->id), SPI_CS0_DIS_M);
 #endif
 
-  spiinfo("%s:%d\n", __FILE__, __LINE__);
-
   putreg32(0, SPI_CTRL_REG(config->id));
   putreg32(VALUE_MASK(0, SPI_HOLD_TIME), SPI_CTRL2_REG(config->id));
 
@@ -1534,8 +1523,6 @@ static void esp32_spi_init(struct spi_dev_s *dev)
   esp32_spi_setfrequency(dev, config->clk_freq);
   esp32_spi_setbits(dev, 8);
   esp32_spi_setmode(dev, config->mode);
-
-  spiinfo("%s:%d\n", __FILE__, __LINE__);
 
 }
 
@@ -1751,7 +1738,7 @@ int esp32_spibus_setcsind(int port, int csind)
     else
       {
         esp32_configgpio(config->cs_pins[i], OUTPUT);
-        esp32_gpio_matrix_out(config->cs_pins[i], 0x100, 0, 0);   // Cancel routing
+        esp32_gpio_matrix_out(config->cs_pins[i], MATRIX_DETACH_OUT_SIG, 0, 0);   // Cancel routing
         esp32_gpiowrite(config->cs_pins[i], 1);
       }
 #endif
